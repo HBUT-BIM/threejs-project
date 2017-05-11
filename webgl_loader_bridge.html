@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>three.js webgl - OBJLoader + MTLLoader</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+        
+        #info {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display: block;
+        }
+        
+        #info a,
+        .button {
+            color: #f00;
+            font-weight: bold;
+            text-decoration: underline;
+            cursor: pointer
+        }
+    </style>
+</head>
+<script>
+    var isWDown = false
+    var isSDown = false
+    var isADown = false
+    var isDDown = false
+    var isQDown = false
+    var isEDown = false
+    var isIDown = false
+    var isKDown = false
+    var isJDown = false
+    var isLDown = false
+    var isUDown = false
+    var isODown = false
+    var isXDown = false
+    var isZDown = false
+    var isNDown = false
+    var isMDown = false
+    var TOOTH = 0.01
+    var FOOT = 0.05
+
+    function control(key) {
+        var keychar = String.fromCharCode(key)
+        switch (keychar) {
+            case 'Z':
+                isZDown = true
+                break
+            case 'X':
+                isXDown = true
+                break
+            case 'z':
+                isZDown = false
+                break
+            case 'x':
+                isXDown = false
+                break
+            case 'N':
+                isNDown = true
+                break
+            case 'M':
+                isMDown = true
+                break
+            case 'n':
+                isNDown = false
+                break
+            case 'm':
+                isMDown = false
+                break
+            case "W":
+                isWDown = true
+                break
+            case "S":
+                isSDown = true
+                break
+            case "A":
+                isADown = true
+                break
+            case "D":
+                isDDown = true
+                break
+            case "Q":
+                isQDown = true
+                break
+            case "E":
+                isEDown = true
+                break
+            case "J":
+                isJDown = true
+                break
+            case "L":
+                isLDown = true
+                break
+            case "I":
+                isIDown = true
+                break
+            case "K":
+                isKDown = true
+                break
+            case "U":
+                isUDown = true
+                break
+            case "O":
+                isODown = true
+                break
+            case "w":
+                isWDown = false
+                break
+            case "s":
+                isSDown = false
+                break
+            case "a":
+                isADown = false
+                break
+            case "d":
+                isDDown = false
+                break
+            case "q":
+                isQDown = false
+                break
+            case "e":
+                isEDown = false
+                break
+            case "j":
+                isJDown = false
+                break
+            case "l":
+                isLDown = false
+                break
+            case "i":
+                isIDown = false
+                break
+            case "k":
+                isKDown = false
+                break
+            case "u":
+                isUDown = false
+                break
+            case "o":
+                isODown = false
+                break
+        }
+    }
+
+    function keyDownEventListener(event) {
+        var key = event.keyCode
+        control(key)
+    }
+
+    function keyUpEventListener(event) {
+        var key = event.keyCode
+        control(key + 32)
+    }
+</script>
+
+<body onkeydown='keyDownEventListener(event)' onkeyup='keyUpEventListener(event)'>
+    <div id="info">
+        <a href="http://threejs.org" target="_blank">three.js</a> - OBJLoader + MTLLoader
+        <p id="target"></p>
+    </div>
+
+    <script src="js/three.js"></script>
+
+    <script src="js/DDSLoader.js"></script>
+    <script src="js/MTLLoader.js"></script>
+    <script src="js/OBJLoader.js"></script>
+    <script src='js/Math.js'></script>
+
+    <script>
+        var container, camera, scene, renderer, raycaster, intersected
+        var mouse = new THREE.Vector2()
+        init();
+        animate();
+
+        function init() {
+            container = document.createElement('div')
+            document.body.appendChild(container)
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000000)
+            camera.position.z = 200
+            scene = new THREE.Scene()
+            var ambient = new THREE.AmbientLight(0xccaa99)
+            scene.add(ambient)
+            var directionalLight = new THREE.DirectionalLight(0x882222)
+            directionalLight.position.set(1000, 300, 1000).normalize()
+            scene.add(directionalLight);
+            var onProgress = function(xhr) {
+                if (xhr.lengthComputable) {
+                    var percentComplete = xhr.loaded / xhr.total * 100;
+                    console.log(Math.round(percentComplete, 2) + '% downloaded');
+                }
+            };
+            var onError = function(xhr) {
+                console.log("err")
+            };
+            var mtlLoader = new THREE.MTLLoader();
+            mtlLoader.setPath('obj/');
+            mtlLoader.load('bridge.mtl', function(materials) {
+                materials.preload()
+                var objLoader = new THREE.OBJLoader()
+                objLoader.setMaterials(materials)
+                objLoader.setPath('obj/')
+                objLoader.load('Bridge.obj', function(object) {
+                    object.position.x = 0
+                    object.position.y = 0
+                    object.position.z = 200
+                    scene.add(object)
+                }, onProgress, onError)
+            })
+            raycaster = new THREE.Raycaster();
+            renderer = new THREE.WebGLRenderer()
+            renderer.setPixelRatio(window.devicePixelRatio)
+            renderer.setSize(window.innerWidth, window.innerHeight)
+            container.appendChild(renderer.domElement)
+            document.addEventListener('mousemove', onDocumentMouseMove, false)
+            document.addEventListener('mousedown', onDocumentMouseDown)
+            window.addEventListener('resize', onWindowResize, false)
+        }
+
+        function onDocumentMouseDown(event) {
+            var mouse = new THREE.Vector2()
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+            var raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera)
+            if (scene.children[2]) {
+                var intersects = raycaster.intersectObjects(scene.children[2].children)
+                if (intersects.length > 0) {
+                    console.log(intersects[0].object)
+                    var geometry = new THREE.SphereBufferGeometry(0.1)
+                    var material = new THREE.MeshBasicMaterial({
+                        color: 0xffffff
+                    })
+                    var mesh = new THREE.Mesh(geometry, material)
+                    mesh.position.x = intersects[0].point.x
+                    mesh.position.y = intersects[0].point.y
+                    mesh.position.z = intersects[0].point.z
+                    scene.add(mesh)
+                    document.getElementById('target').innerHTML = "x:" + mesh.position.x + "   y:" + mesh.position.y + "   z:" + mesh.position.z
+                }
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onDocumentMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+            raycaster.setFromCamera(mouse, camera)
+            if (scene.children[2]) {
+                var intersects = raycaster.intersectObjects(scene.children[2].children)
+                if (intersects.length > 0) {
+                    if (intersected != intersects[0].object) {
+                        if (intersected) {
+                            intersected.material.emissive.setHex(intersected.currentHex)
+                        }
+                        intersected = intersects[0].object
+                        intersected.currentHex = intersected.material.emissive.getHex()
+                        intersected.material.emissive.setHex(0x00ffff)
+                    }
+                } else {
+                    if (intersected) {
+                        intersected.material.emissive.setHex(intersected.currentHex)
+                    }
+                    intersected = null
+                }
+            }
+        }
+
+        function animate() {
+            render()
+            requestAnimationFrame(animate)
+        }
+
+        function render() {
+            if (isWDown) {
+                WKeyDown(camera)
+            }
+            if (isSDown) {
+                SKeyDown(camera)
+            }
+            if (isADown) {
+                AKeyDown(camera)
+            }
+            if (isDDown) {
+                DKeyDown(camera)
+            }
+            if (isQDown) {
+                QKeyDown(camera)
+            }
+            if (isEDown) {
+                EKeyDown(camera)
+            }
+            if (isIDown) {
+                IKeyDown(camera)
+            }
+            if (isKDown) {
+                KKeyDown(camera)
+            }
+            if (isJDown) {
+                JKeyDown(camera)
+            }
+            if (isLDown) {
+                LKeyDown(camera)
+            }
+            if (isUDown) {
+                UKeyDown(camera)
+            }
+            if (isODown) {
+                OKeyDown(camera)
+            }
+            if (isZDown) {
+                FOOT *= 1.03
+            }
+            if (isXDown) {
+                FOOT *= 0.97087
+            }
+            if (isNDown) {
+                TOOTH *= 1.03
+                if (TOOTH > 0.6) {
+                    TOOTH = 0.3
+                }
+            }
+            if (isMDown) {
+                TOOTH *= 0.97097
+            }
+
+            renderer.render(scene, camera)
+        }
+    </script>
+
+</body>
+
+</html>
